@@ -111,9 +111,9 @@ arrowhead x = f x
 
 -- 6. snowflake
 snowflake :: Int -> Command
-snowflake x = f x
+snowflake x = copy 3 (f x :#: p :#: p)
     where
-        f 0     = GrabPen red :#: copy 3 (Go d :#: p :#: p)
+        f 0     = GrabPen red :#: Go d
         f x = f (x-1) :#: n :#: f (x-1) :#: p :#: p :#: f (x-1) :#: n :#: f (x-1)
         n       = Turn 60
         p       = Turn (-60)
@@ -154,7 +154,7 @@ thirtytwo = undefined
 
 
 main :: IO ()
-main = display $ hilbert 2
+main = display $ snowflake 5
 
 {-
     test = let inDirection angle = Branch (Turn angle :#: Go 100) in
