@@ -124,9 +124,9 @@ snowflake x = copy 3 (f x :#: p :#: p)
 hilbert :: Int -> Command
 hilbert x = n :#: l x
     where
-        l 0     = GrabPen red :#: Go d
+        l 0     = Sit
         l x = n :#: r (x-1) :#: f (x-1) :#: p :#: l (x-1) :#: f (x-1) :#: l (x-1) :#: p :#: f (x-1) :#: r (x-1) :#: n
-        r 0     = GrabPen blue :#: Go d
+        r 0     = Sit
         r x = p :#: l (x-1) :#: f (x-1) :#: n :#: r (x-1) :#: f (x-1) :#: r (x-1) :#: n :#: f (x-1) :#: l (x-1) :#: p
         f x     = GrabPen green :#: Go d
         n       = Turn 90
@@ -154,7 +154,7 @@ thirtytwo = undefined
 
 
 main :: IO ()
-main = display $ snowflake 5
+main = display $ hilbert 6
 
 {-
     test = let inDirection angle = Branch (Turn angle :#: Go 100) in
