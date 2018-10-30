@@ -118,7 +118,7 @@ display c = do
 draw :: Command -> IO ()
 draw c = do clear [ColorBuffer]
             loadIdentity
-            background 
+            background
             toGraphic $ rescale $ execute c
             swapBuffers
 
@@ -138,7 +138,7 @@ background = do GL.color theBGcolor
                        GL.Vertex3 (-1)   1 (0::GL.GLfloat) ]
 
 
-toVertex (Pnt x y)  =  GL.vertex $ GL.Vertex3 
+toVertex (Pnt x y)  =  GL.vertex $ GL.Vertex3
  (realToFrac x) (realToFrac y) (0::GL.GLfloat)
 
 
@@ -151,7 +151,7 @@ type Distance = Float
 type Turtle   = (Pen,Angle,Pnt)
 
 data Command = Go Distance
-             | Turn Angle 
+             | Turn Angle
              | Sit
              | Command :#: Command
              | Branch Command
@@ -241,11 +241,8 @@ instance Arbitrary Pen where
 
 
 instance Arbitrary Command where
-    arbitrary  =  sized cmd 
+    arbitrary  =  sized cmd
         where
           cmd n  |  n <= 0     =  oneof [liftM (Go . abs) arbitrary,
                                          liftM Turn arbitrary ]
                  |  otherwise  =  liftM2 (:#:) (cmd (n `div` 2)) (cmd (n `div`2))
-
-
-
