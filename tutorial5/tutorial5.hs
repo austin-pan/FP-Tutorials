@@ -347,11 +347,13 @@ prop_CNF p  =  equivalent p (toCNF p)
 
 
 -- counts number of satisfiable options
-countTrues :: Wff -> Int
-countTrues p = sum [1 | e <- envs (names p), eval e p]
+countTrues :: Wff -> String
+countTrues p = show (sum [1 | e <- envs (names p), eval e p]) ++ " / " ++ show (2^(length $ names p))
 
-t1 = (Var "H" :->: Var "A") :&: (Var "A" :->: (Var "B" :&: Var "C")) :&: ((Var "B" :|: Var "C") :->: Var "D") :&: (Var "A" :->: Var "E") :&: (Var "E" :->: Var "F")
-    :&: (Var "F" :->: Var "G") :&: (Var "G" :->: Var "H")
+t1 = (Var "A" :->: Var "B") :|: (Var "C" :->: Var "D")
+
+{-(Var "H" :->: Var "A") :&: (Var "A" :->: (Var "B" :&: Var "C")) :&: ((Var "B" :|: Var "C") :->: Var "D") :&: (Var "A" :->: Var "E") :&: (Var "E" :->: Var "F")
+    :&: (Var "F" :->: Var "G") :&: (Var "G" :->: Var "H")-}
 
 
 -- For QuickCheck --------------------------------------------------------
