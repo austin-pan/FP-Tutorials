@@ -111,10 +111,10 @@ arrowhead x = f x
 
 -- 6. snowflake
 snowflake :: Int -> Command
-snowflake x = copy 3 (f x :#: p :#: p)
+snowflake x = copy 3 (f x :#: p :#: p) -- f--f--f--
     where
         f 0     = GrabPen red :#: Go d
-        f x = f (x-1) :#: n :#: f (x-1) :#: p :#: p :#: f (x-1) :#: n :#: f (x-1)
+        f x = f (x-1) :#: n :#: f (x-1) :#: p :#: p :#: f (x-1) :#: n :#: f (x-1) -- f+f--f+f
         n       = Turn 60
         p       = Turn (-60)
         d       = 10
@@ -122,13 +122,13 @@ snowflake x = copy 3 (f x :#: p :#: p)
 
 -- 7. hilbert
 hilbert :: Int -> Command
-hilbert x = n :#: l x
+hilbert x = n :#: l x -- l
     where
         l 0     = Sit
-        l x = n :#: r (x-1) :#: f (x-1) :#: p :#: l (x-1) :#: f (x-1) :#: l (x-1) :#: p :#: f (x-1) :#: r (x-1) :#: n
+        l x = n :#: r (x-1) :#: f (x-1) :#: p :#: l (x-1) :#: f (x-1) :#: l (x-1) :#: p :#: f (x-1) :#: r (x-1) :#: n -- +rf-lfl-fr+
         r 0     = Sit
-        r x = p :#: l (x-1) :#: f (x-1) :#: n :#: r (x-1) :#: f (x-1) :#: r (x-1) :#: n :#: f (x-1) :#: l (x-1) :#: p
-        f x     = GrabPen green :#: Go d
+        r x = p :#: l (x-1) :#: f (x-1) :#: n :#: r (x-1) :#: f (x-1) :#: r (x-1) :#: n :#: f (x-1) :#: l (x-1) :#: p -- -lf+rfr+fl-
+        f x     = GrabPen blue :#: Go d
         n       = Turn 90
         p       = Turn (-90)
         d       = 5.0
@@ -140,21 +140,52 @@ hilbert x = n :#: l x
 --------------------------------------------------
 
 -- Bonus L-Systems
+peanoGosper :: Int -> Command
+peanoGosper x = f x -- f
+    where
+        f 0     = GrabPen red :#: Go d
+        f x = f (x-1) :#: n :#: g (x-1) :#: n :#: n :#: g (x-1) :#: p :#: f (x-1) :#: p :#: p :#: f (x-1) :#: f (x-1) :#: p :#: g (x-1) :#: n -- f+g++g-f--ff-g+
+        g 0     = GrabPen blue :#: Go d
+        g x = p :#: f (x-1) :#: n :#: g (x-1) :#: g (x-1) :#: n :#: n :#: g (x-1) :#: n :#: f (x-1) :#: p :#: p :#: f (x-1) :#: p :#: g (x-1) -- -f+gg++g+f--f-g
+        n       = Turn 60
+        p       = Turn (-60)
+        d       = 5.0
 
-peanoGosper = undefined
+cross :: Int -> Command
+cross x = copy 4 (f x :#: p)-- f-f-f-f-
+    where
+        f 0     = GrabPen blue :#: Go d
+        f x = f (x-1) :#: p :#: f (x-1) :#: n :#: f (x-1) :#: n :#: f (x-1) :#: f (x-1) :#: p :#: f (x-1) :#: p :#: f (x-1) :#: n :#: f (x-1) -- f-f+f+ff-f-f+f
+        n       = Turn angle
+        p       = Turn ((-1) * angle)
+        angle   = 90
+        d       = 5.0
 
+branch :: Int -> Command
+branch x = g x -- g
+    where
+        f 0     = GrabPen red :#: Go d
+        f x = f (x-1) :#: f (x-1) -- ff
+        g 0     = GrabPen blue :#: Go d
+        g x = f (x-1) :#: p :#: Branch (Branch (g (x-1)) :#: n :#: g (x-1)) :#: n :#: f (x-1) :#: Branch (n :#: f (x-1) :#: g (x-1)) :#: p :#: g (x-1) -- f-[[g]+g]+f[+fg]-g
+        n       = Turn angle
+        p       = Turn ((-1) * angle)
+        angle   = 22.5
+        d       = 5.0
 
-cross = undefined
-
-
-branch = undefined
-
-
-thirtytwo = undefined
+thirtytwo :: Int -> Command
+thirtytwo x = copy 3 (f x :#: n) :#: f x -- F+F+F+F
+    where
+        f 0     = GrabPen blue :#: Go d
+        f x = p :#: f (x-1) :#: n :#: f (x-1) :#: p :#: f (x-1) :#: p :#: f (x-1) :#: n :#: f (x-1) :#: n :#: f (x-1) :#: f (x-1) :#: p :#: f (x-1) :#: n :#: f (x-1) :#: n :#: f (x-1) :#: f (x-1) :#: n :#: f (x-1) :#: p :#: f (x-1) :#: p :#: f (x-1) :#: f (x-1) :#: n :#: f (x-1) :#: f (x-1) :#: p :#: f (x-1) :#: f (x-1) :#: n :#: f (x-1) :#: n :#: f (x-1) :#: p :#: f (x-1) :#: f (x-1) :#: p :#: f (x-1) :#: p :#: f (x-1) :#: n :#: f (x-1) :#: f (x-1) :#: p :#: f (x-1) :#: p :#: f (x-1) :#: n :#: f (x-1) :#: n :#: f (x-1) :#: p :#: f (x-1) :#: n -- -F+F-F-F+F+FF-F+F+FF+F-F-FF+FF-FF+F+F-FF-F-F+FF-F-F+F+F-F+
+        n       = Turn angle
+        p       = Turn ((-1) * angle)
+        angle   = 90
+        d       = 5.0
 
 
 main :: IO ()
-main = display $ hilbert 6
+main = display $ cross 5
 
 {-
     test = let inDirection angle = Branch (Turn angle :#: Go 100) in
