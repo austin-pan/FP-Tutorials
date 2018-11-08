@@ -118,6 +118,7 @@ filterGT key m = fromList $ filter (\x -> (fst x) > key) $ toList m
 merge :: Ord k => Keymap k a -> Keymap k a -> Keymap k a
 merge m1 m2 = fromList (toList m1 ++ toList m2)
 
+-- forall merged lists, an element in the merged list exist in either the first or second list that make it
 prop_merge :: (Ord k, Eq a) => k -> Keymap k a -> Keymap k a -> Bool
 prop_merge key m1 m2 = (get' merged == get' m1) || (get' merged == get' m2)
     where

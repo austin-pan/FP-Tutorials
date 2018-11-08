@@ -38,11 +38,15 @@ testDB = fromList [
 -- Exercise 1
 
 longestProductLen :: [(Barcode, Item)] -> Int
-longestProductLen xs = longProd' xs 0
+longestProductLen xs = longProd'' xs
+    -- longProd' xs 0
     where
         longProd' :: [(Barcode, Item)] -> Int -> Int
         longProd' [] len = len
         longProd' ((_,x):xs) len = longProd' xs (max (length (fst x)) len)
+
+        longProd'' :: [(Barcode, Item)] -> Int
+        longProd'' = foldr (\(b,i) -> max (length (fst i))) 0
 
 formatLine :: Int -> (Barcode, Item) -> String
 formatLine n (b,i) = b ++ take 3 (repeat '.') ++ fst i ++ take (spill + 3) (repeat ('.')) ++ snd i
