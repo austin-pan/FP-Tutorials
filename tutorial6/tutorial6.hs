@@ -8,14 +8,13 @@
 import LSystem
 import Test.QuickCheck
 
-pathExample = (Go 30 :#: Turn 120 :#: Go 30 :#: Turn 120 :#:  Go 30)
+pathExample = (Go 30 :#: Turn 120 :#: Go 30 :#: Sit :#: Turn 120 :#:  Go 30)
 
 -- Exercise 1
 
 -- 1a. split
 split :: Command -> [Command]
-split (a :#: Sit)   = split a
-split (Sit :#: b)   = split b
+split (Sit)         = []
 split (a :#: b)     = split a ++ split b
 split a             = [a]
 
@@ -93,12 +92,12 @@ optimise p = join' $ optimise' [c | c <- split p,c /= Sit, c /= Go 0, c /= Turn 
 
 -- 5a. arrowhead
 arrowhead :: Int -> Command
-arrowhead x = f x
+arrowhead x = f x -- f
     where
         f 0     = GrabPen red :#: Go d
-        f x = g (x-1) :#: n :#: f (x-1) :#: n :#: g (x-1)
+        f x = g (x-1) :#: n :#: f (x-1) :#: n :#: g (x-1) -- g+f+g
         g 0     = GrabPen blue :#: Go d
-        g x = f (x-1) :#: p :#: g (x-1) :#: p :#: f (x-1)
+        g x = f (x-1) :#: p :#: g (x-1) :#: p :#: f (x-1) -- f-g-f
         n       = Turn 60
         p       = Turn (-60)
         d       = 7
@@ -183,9 +182,21 @@ thirtytwo x = copy 3 (f x :#: n) :#: f x -- F+F+F+F
         angle   = 90
         d       = 5.0
 
+dragon :: Int -> Command
+dragon x = f x :#: n :#: g x
+    where
+        f 0   = GrabPen blue :#: Go d
+        f x = n :#: f (x-1) :#: p :#: g (x-1)
+        g 0   = GrabPen red :#: Go d
+        g x = p :#: g (x-1) :#: n :#: f (x-1)
+        n     = Turn angle
+        p     = Turn ((-1) * angle)
+        angle = 90.0
+        d     = 5.0
+
 
 main :: IO ()
-main = display $ cross 5
+main = display $ dragon 2
 
 {-
     test = let inDirection angle = Branch (Turn angle :#: Go 100) in

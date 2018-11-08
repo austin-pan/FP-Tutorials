@@ -318,6 +318,16 @@ test4 = ((((Var "A" :|: Var "B") :|: Var "C") :&: ((Not (Var "D") :|: Var "E") :
 test5 = ((T :|: Var "B") :->: (Var "A" :|: T))
 
 toCNFList :: Wff -> [[Wff]]
+toCNFList :: Wff -> [[Wff]]
+toCNFList p = cnf (toNNF p)
+    where
+      cnf F              =  [[]]
+      cnf T              =  []
+      cnf (Var n)        =  [[Var n]]
+      cnf (Not (Var n))  =  [[Not (Var n)]]
+      cnf (p :&: q)      =  nub (cnf p ++ cnf q)
+      cnf (p :|: q)      =  [nub $ x ++ y | x <- cnf p, y <- cnf q]
+{-
 toCNFList (T)               = [[T]]
 toCNFList (F)               = [[F]]
 toCNFList p                 = listsFromCNF $ nnfToCNF $ toNNF p
@@ -336,6 +346,7 @@ toCNFList p                 = listsFromCNF $ nnfToCNF $ toNNF p
                     distributeOr ((q :&: r) :|: p) = ((q :|: p) :&: (r :|: p))
                     distributeOr (p :|: q)         = distributeOr p :|: distributeOr q
                     distributeOr (p :&: q)         = distributeOr p :&: distributeOr q
+-}
 
 -- convert to conjunctive normal form
 toCNF :: Wff -> Wff
