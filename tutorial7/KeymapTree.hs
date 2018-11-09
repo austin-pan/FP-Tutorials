@@ -140,7 +140,8 @@ select :: Ord k => (a -> Bool) -> Keymap k a -> Keymap k a
 select f Leaf = Leaf
 select f (Node k v left right)
     | f v       = Node k v (select f left) (select f right)
-    | otherwise = merge (select f left) (select f right)
+    | otherwise = select f $ del k (Node k v left right)
+        -- merge (select f left) (select f right)
 
 -- Instances for QuickCheck -----------------------------
 instance (Ord k, Show k, Show a) => Show (Keymap k a) where
