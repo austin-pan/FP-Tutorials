@@ -7,7 +7,7 @@ module Tutorial8 where
 import Data.List
 import Test.QuickCheck
 import Data.Char
-
+import Data.Maybe
 
 -- Type declarations
 -- all states, symbols, start state, final states, transition states (state, symbol, next state)
@@ -205,21 +205,23 @@ emptyFSM = ( [0], [], 0, [0], [] )
 
 --14.
 intFSM :: (Ord q) => FSM q -> FSM Int
-intFSM fsm = ( [0..length sNum - 1], alph fsm, (convert (start fsm)), final', trans' )
+intFSM fsm = ( [0..length sNum], alph fsm, (convert (start fsm)), final', trans' )
     where
         sNum = zip (states fsm) [0..]
-        convert a = lookup' a sNum
+        convert a
+            | lookup' a sNum == Nothing  = length sNum
+            | otherwise                  = fromJust $ lookup' a sNum
 
         final' = [ s2 | (s1, s2) <- sNum, s1 `elem` (final fsm) ]
         trans' = [ (convert s1, sym, convert s2) | (s1, sym, s2) <- (trans fsm) ]
 
-        lookup' :: (Ord a) => a -> [(a,b)] -> b
-        lookup' _ [] = error "key doesn't exist"
+        lookup' :: (Ord a) => a -> [(a,b)] -> Maybe b
+        lookup' _ [] = Nothing
         lookup' k ((x,y):xs)
-            | k == x    = y
+            | k == x    = Just y
             | otherwise = lookup' k xs
 
-concatFSM :: Ord q => Ord q' => FSM q -> FSM q' -> FSM Int
+concatFSM :: Ord q => Ord q' => FSM q -> FSM q' -> FSM Int -- finals of one fsm lead to start of other fsm
 concatFSM fsmA fsmB
     | alph fsmA /= alph fsmB  = error "unequal alphabets"
     | otherwise               = concatIntFSM (intFSM fsmA) (intFSM fsmB)
@@ -237,7 +239,7 @@ concatFSM fsmA fsmB
 
 --15.
 stringFSM :: String -> FSM Int
-stringFSM str = ([0..length str], str, 0, [length str], transitions )
+stringFSM str = ([0..length str], nub str, 0, [length str], transitions )
     where
         transitions = [ (n, str !! n, n+1) | n <- [0..length str-1] ]
 
@@ -269,9 +271,16 @@ test1 = ([2,3,4,5],"abcd",2,[3],[(2,'a',3),(2,'c',4),(4,'d',3)])
 test2 = ([0,1,2,3,4,5,6,7],"abcd",7,[2,4,1],[(0,'a',1),(1,'c',2),(3,'a',4),(3,'c',5),(5,'d',4),(7,epsilon,0),(7,epsilon,3)])
 test3 = ([0,1,2,3,4,5,6,7,8,9,10,11],"ab",11,[4,10],[(0,'a',1),(0,'a',2),(0,'b',1),(0,'b',2),(1,'b',4),(2,'a',3),(2,'b',3),(3,'b',4),(4,'a',4),(4,'b',4),(5,'\949',6),(5,'\949',10),(6,'a',7),(7,'\949',8),(8,'b',9),(9,'\949',6),(9,'\949',10),(11,'\949',0),(11,'\949',5)])
 
-unionFSM :: (Ord q) => FSM q -> FSM q -> FSM Int
-unionFSM a b = undefined
+unionFSM :: (Ord q) => FSM q -> FSM q -> FSM Int -- union is true if string is accepted by either fsm
+unionFSM a b = intFSM $ unionFSM' (completeFSM a) (completeFSM b)
+    where
+        unionFSM' :: (Ord q,Ord q') => FSM (Maybe q) -> FSM (Maybe q') -> FSM (Maybe q,Maybe q')
+        unionFSM' fsmA fsmB = ( allStates, nub (alph fsmA ++ alph fsmB), (start fsmA, start fsmB), zip (final fsmA) (states fsmB) ++ zip (states fsmA) (final fsmB), trans' fsmA fsmB )
+            where
+                allStates = [ (fA,fB) | fA <- states fsmA, fB <- states fsmB ]
 
+                trans' :: (Ord q,Ord q') => FSM (Maybe q) -> FSM (Maybe q') -> [((Maybe q,Maybe q'),Char,(Maybe q,Maybe q'))]
+                trans' fsmA fsmB = [ ((s0, s1), c, (s0',s1')) | (s0,c,s0') <- trans fsmA, (s1,c',s1') <- trans fsmB ]
 {- requires epsilon before string
 unionIntFSM (intFSM a) (intFSM b)
     where
@@ -295,8 +304,10 @@ prop_union n m l =  accepts (unionFSM (stringFSM n') (stringFSM m')) l' == (acce
                           l' = safeString l
 
 --17.
-star :: (Ord q) => FSM q -> FSM q
-star = undefined
+star :: (Ord q) => FSM q -> FSM q -- accepts empty string or repeats of accepted string
+star f = ( states f, alph f, start f, start f : final f, trans' )
+    where
+        trans' = trans f ++ [ (s1, sym, start f) | (s1, sym, s2) <- trans f, s2 `elem` final f ]
 
 
 prop_star a n = (star $ stringFSM a') `accepts` (concat [a' | x <- [0..n]]) &&
@@ -304,8 +315,13 @@ prop_star a n = (star $ stringFSM a') `accepts` (concat [a' | x <- [0..n]]) &&
       where a' = safeString a
 
 --18.
-complement :: (Ord q) => FSM q -> FSM Int
-complement = undefined
+complement :: (Ord q) => FSM q -> FSM Int -- returns dfsm that accepts only the rejected values from input dfsm
+complement fsm = complement' $ intFSM fsm
+    where
+        complement' fsm = ( allStates, nub (alph fsm), start fsm, [ s | s <- allStates, s `notElem` final fsm ], trans' )
+            where
+                allStates = states fsm ++ [length (states fsm)]
+                trans' = trans fsm ++ [ (s1, a, length (states fsm)) | s1 <- states fsm, a <- ['a'..'z'], delta fsm s1 a == [] ] ++ [ (s1, a, length (states fsm)) | s1 <- final fsm, a <- alph fsm ] ++ [ (length (states fsm), a, length (states fsm)) | a <- ['a'..'z'] ]
 
 prop_complement :: String -> String -> Bool
 prop_complement n m = (n' == m')
@@ -315,7 +331,9 @@ prop_complement n m = (n' == m')
                             m' = safeString m
 
 intersectFSM :: (Ord q) => FSM q -> FSM q -> FSM (q,q)
-intersectFSM a b = undefined
+intersectFSM a b = (zip (states a) (states b), nub (alph a ++ alph b), (start a, start b), zip (final a) (final b), trans')
+    where
+        trans' = [ ((s0, s1), c, (s0',s1')) | (s0,c,s1) <- trans a, (s0',c',s1') <- trans b, c==c' ]
 
 prop_intersect n m l = accepts (intersectFSM (stringFSM n') (stringFSM m')) l' == (accepts (stringFSM n') l' && accepts (stringFSM m') l')
                     where m' = safeString m
