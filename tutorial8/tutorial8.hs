@@ -266,21 +266,35 @@ completeFSM fsm = ( [ Just s | s <- states fsm ], alph fsm, Just (start fsm), [ 
                     | delta fsm curr c == []  = [ (Just curr, c, Nothing) ]
                     | otherwise               = [ (Just curr, c, Just d) | d <- delta fsm curr c ]
 
-test = ([0,1,2],"abcd",0,[2],[(0,'a',1),(1,'c',2)])
-test1 = ([2,3,4,5],"abcd",2,[3],[(2,'a',3),(2,'c',4),(4,'d',3)])
-test2 = ([0,1,2,3,4,5,6,7],"abcd",7,[2,4,1],[(0,'a',1),(1,'c',2),(3,'a',4),(3,'c',5),(5,'d',4),(7,epsilon,0),(7,epsilon,3)])
-test3 = ([0,1,2,3,4,5,6,7,8,9,10,11],"ab",11,[4,10],[(0,'a',1),(0,'a',2),(0,'b',1),(0,'b',2),(1,'b',4),(2,'a',3),(2,'b',3),(3,'b',4),(4,'a',4),(4,'b',4),(5,'\949',6),(5,'\949',10),(6,'a',7),(7,'\949',8),(8,'b',9),(9,'\949',6),(9,'\949',10),(11,'\949',0),(11,'\949',5)])
+t = (stringFSM "ab")
+t1 = (stringFSM "bc")
+com = unionFSM t t1
+com1 = unionFSM2 t t1
 
 unionFSM :: (Ord q) => FSM q -> FSM q -> FSM Int -- union is true if string is accepted by either fsm
-unionFSM a b = intFSM $ unionFSM' (completeFSM a) (completeFSM b)
+unionFSM a b = intFSM $ unionFSM2 a b --unionFSM' (completeFSM a) (completeFSM b)
     where
-        unionFSM' :: (Ord q,Ord q') => FSM (Maybe q) -> FSM (Maybe q') -> FSM (Maybe q,Maybe q')
-        unionFSM' fsmA fsmB = ( allStates, nub (alph fsmA ++ alph fsmB), (start fsmA, start fsmB), zip (final fsmA) (states fsmB) ++ zip (states fsmA) (final fsmB), trans' fsmA fsmB )
+        unionFSM' :: (Ord q) => FSM (Maybe q) -> FSM (Maybe q) -> FSM (Maybe q,Maybe q)
+        unionFSM' fsmA fsmB = ( allStates, nub (alph fsmA ++ alph fsmB), (start fsmA, start fsmB), nub [ (a,b) | a <- (final fsmA), b <- (Nothing : states fsmB)] ++ [ (a,b) | a <- (Nothing : states fsmA), b <- (final fsmB) ], trans' fsmA fsmB )
             where
                 allStates = [ (fA,fB) | fA <- states fsmA, fB <- states fsmB ]
 
-                trans' :: (Ord q,Ord q') => FSM (Maybe q) -> FSM (Maybe q') -> [((Maybe q,Maybe q'),Char,(Maybe q,Maybe q'))]
-                trans' fsmA fsmB = [ ((s0, s1), c, (s0',s1')) | (s0,c,s0') <- trans fsmA, (s1,c',s1') <- trans fsmB ]
+                trans' :: (Ord q) => FSM (Maybe q) -> FSM (Maybe q) -> [((Maybe q,Maybe q),Char,(Maybe q,Maybe q))]
+                trans' fsmA fsmB = concat [ [ if null (delta fsmA sA c) && null (delta fsmB sB c) then ((Nothing,Nothing),c,(Nothing,Nothing)) else if null (delta fsmA sA c) then ((Nothing,sB),c,(Nothing,dB)) else if null (delta fsmB sB c) then ((sA,Nothing),c,(dA,Nothing)) else ((sA,sB),c,(dA,dB)) | dA <- delta fsmA sA c, dB <- delta fsmB sB c] | sA <- states fsmA, sB <- states fsmB, c <- nub (alph fsmA ++ alph fsmB) ]
+
+unionFSM2 :: (Ord q) => FSM q -> FSM q -> FSM (Maybe q,Maybe q) -- union is true if string is accepted by either fsm
+unionFSM2 a b = unionFSM' (completeFSM a) (completeFSM b)
+    where
+        unionFSM' :: (Ord q) => FSM (Maybe q) -> FSM (Maybe q) -> FSM (Maybe q,Maybe q)
+        unionFSM' fsmA fsmB = ( allStates, nub (alph fsmA ++ alph fsmB), (start fsmA, start fsmB), nub [ (a,b) | a <- (final fsmA), b <- (Nothing : states fsmB)] ++ [ (a,b) | a <- (Nothing : states fsmA), b <- (final fsmB) ], trans' fsmA fsmB )
+            where
+                allStates = [ (fA,fB) | fA <- states fsmA, fB <- states fsmB ]
+
+                trans' :: (Ord q) => FSM (Maybe q) -> FSM (Maybe q) -> [((Maybe q,Maybe q),Char,(Maybe q,Maybe q))]
+                trans' fsmA fsmB = concat [ [ if null (delta fsmA sA c) && null (delta fsmB sB c) then ((Nothing,Nothing),c,(Nothing,Nothing)) else if null (delta fsmA sA c) then ((Nothing,sB),c,(Nothing,dB)) else if null (delta fsmB sB c) then ((sA,Nothing),c,(dA,Nothing)) else ((sA,sB),c,(dA,dB)) | dA <- delta fsmA sA c, dB <- delta fsmB sB c] | sA <- states fsmA, sB <- states fsmB, c <- nub (alph fsmA ++ alph fsmB) ]
+
+trans2 :: (Ord q) => FSM (Maybe q) -> FSM (Maybe q) -> String
+trans2 fsmA fsmB = [ c | c <- nub (alph fsmA ++ alph fsmB) ]
 {- requires epsilon before string
 unionIntFSM (intFSM a) (intFSM b)
     where
