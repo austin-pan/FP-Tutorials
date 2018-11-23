@@ -104,12 +104,19 @@ next fsm ls = canonical $ [start fsm] : [ ddelta fsm l c | l <- ls, c <- alph fs
 
 -- 7.
 reachable :: (Ord q) => FSM q -> [[q]] -> [[q]] -- nfsm, list of superstates -> all reachable superstates
-reachable fsm ls = r' fsm [[]] ls
+reachable fsm ls = r' fsm [[]] ls -- [ many (next fsm) s | s <- ls ]
     where
         r' :: (Ord q) => FSM q -> [[q]] -> [[q]] -> [[q]]  -- nfsm, previous compilation of list of superstates, list of superstates -> all reachable superstates
         r' f prev ss
             | prev /= ss  = canonical $ (next f ss) ++ (r' f ss (delete [start f] (next f ss)))
             | otherwise   = prev
+
+many :: Eq a => (a -> a) -> a -> a
+many g x = many' g (g x) x
+    where
+        many' g curr prev
+            | curr == prev  = curr
+            | otherwise     = many' g (g curr) curr
 
 
 -- 8.

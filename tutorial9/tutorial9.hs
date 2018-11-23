@@ -7,6 +7,7 @@ module Tutorial9 where
 -- Sudoku solver
 -- Based on Bird, "Thinking Functionally with Haskell"
 
+import Test.QuickCheck
 import Data.List (sort,nub,(\\),transpose,genericLength)
 import Data.String (lines,unlines)
 
@@ -51,7 +52,7 @@ choices :: Matrix Digit -> Matrix [Digit]
 choices m = [ [ conv x | x <- r ] | r <- m ]
     where
         conv :: Char -> String
-        conv x = if x == ' ' then "123456789" else [x]
+        conv x = if blank x then "123456789" else [x]
 
 cp :: [[a]] -> [[a]]
 cp []        =  [[]]
@@ -59,79 +60,133 @@ cp (xs:xss)  =  [ x:ys | x <- xs, ys <- cp xss ]
 
 -- 8.
 expand :: Matrix [Digit] -> [Matrix Digit]
-expand m = undefined--[ cp r | r <- m ] [ cp]
+expand m = cp [ cp r | r <- m ]
 
+prop_expand :: Matrix [Digit] -> Bool
+prop_expand m = length (expand m) == product (map (\x -> product (map length x)) m)
+
+numPosAns :: Matrix Digit -> Int
+numPosAns m = length (expand (choices m)) -- wrong
 -- 11, 12, 13.
 -- transpose :: [[a]] -> [[a]]
 -- transpose [xs]      =  [[x] | x <- xs]
 -- transpose (xs:xss)  =  zipWith (:) xs (transpose xss)
 
 ungroup :: [[a]] -> [a]
-ungroup =  undefined
+ungroup []     = []
+ungroup (x:xs) = x ++ ungroup xs
+
+byRow = replicate 9 "123456789" :: Matrix Digit
 
 rows, cols, boxs :: Matrix a -> Matrix a
-rows  =  undefined
-cols  =  undefined
-boxs  =  undefined
+rows m = m
+cols m = transpose m
+boxs m = (map ungroup . ungroup) $ map cols $ (group . map group) m
 
 -- 14.
 distinct :: Eq a => [a] -> Bool
-distinct xs  = undefined
+distinct xs = xs == nub xs
 
 -- 15.
 valid :: Matrix Digit -> Bool
-valid g  = undefined
+valid g = and [ distinct r | r <- rows g ] && and [ distinct c | c <- cols g ] && and [ distinct b | b <- boxs g ]
 
 -- 16.
 simple :: Matrix Digit -> [Matrix Digit]
-simple =  filter valid . expand . choices
+simple = filter valid . expand . choices
+
+-- 17.
+prop_involutions :: Matrix Digit -> Bool
+prop_involutions m
+    | isSquare m = ((rows . rows) m == m) && ((boxs . boxs) m == m) && ((cols . cols) m == m)
+    | otherwise = True
+    where
+        isSquare :: Matrix Digit -> Bool
+        isSquare m = and [ length r > 0 | r <- m ] && length m > 0 && length m == length (head m) && length (nub [ length r | r <- m ]) == 1
 
 -- 18.
 pruneRow :: Row [Digit] -> Row [Digit]
-pruneRow row  = undefined
+pruneRow row = map (\r -> if length r == 1 then r else filter (\x -> notElem x singletons) r) row
+    where
+        singletons = concat $ filter ((==1) . length) row
 
 -- 19.
 pruneBy :: (Matrix [Digit] -> Matrix [Digit])
              -> Matrix [Digit] -> Matrix [Digit]
-pruneBy f  = undefined
+pruneBy f = f . map pruneRow . f
 
 prune :: Matrix [Digit] -> Matrix [Digit]
-prune =  undefined
+prune m = pruneBy boxs $ pruneBy cols $ pruneBy rows m
 
 -- 20.
 many :: Eq a => (a -> a) -> a -> a
-many = undefined
+many g x = many' g (g x) x
+    where
+        many' g curr prev
+            | curr == prev  = curr
+            | otherwise     = many' g (g curr) curr
+
+close :: (Eq a, Ord a) => [(a,a)] -> [(a,a)]
+close pairs  =  nub (sort (pairs ++ [ (x,z) | (x,y) <- pairs,
+              (y',z) <- pairs,
+              y == y' ]))
 
 -- 21.
 the :: [Digit] -> Digit
 the [d]  =  d
 
 extract :: Matrix [Digit] -> Matrix Digit
-extract = undefined
+extract m = map (map the) m
 
--- 22.
+-- 22. solves easy and medium
 solve :: Matrix Digit -> Matrix Digit
-solve = undefined
+solve m = extract $ many prune (choices m)
 
 -- 23.
 failed :: Matrix [Digit] -> Bool
-failed mat  =  undefined
+failed mat = any ((>0) . length) $ map (filter ((==0) . length)) mat
 
 -- 24.
 solved :: Matrix [Digit] -> Bool
-solved =  undefined
+solved mat = lengthOne mat && valid (extract mat)
+    where lengthOne m = and $ map (all ((==1) . length)) m
 
 -- 25.
-smallest :: Matrix [Digit]
-smallest = undefined
+smallest :: Matrix [Digit] -> Int
+smallest mat = (head . sort) $ map length $ concat [ filter ((>1) . length) r | r <- mat ]
+
+-- 26. already defined
+break' :: (a -> Bool) -> [a] -> ([a],[a])
+break' f = span (not . f)
 
 -- 27.
 expand1 :: Matrix [Digit] -> [Matrix [Digit]]
-expand1 mat = undefined
+expand1 mat
+    | not (lengthOne mat) = [ preMat ++ [preRow ++ [[d']] ++ postRow] ++ postMat | d' <- ds ]
+    | otherwise = [[[]]]
+        where
+            (preMat, row:postMat) =  break (any p) mat
+            (preRow, ds:postRow)  =  break p row
+            p = ((== sm) . length)
+            sm = smallest mat
+
+            lengthOne m = and $ map (all ((==1) . length)) m
 
 -- 28.
 search :: Matrix Digit -> [Matrix Digit]
-search = undefined
+search mat = nub $ search' (many prune (choices mat))
+    where
+        search' :: Matrix [Digit] -> [Matrix Digit]
+        search' mat
+            | solved mat = [extract mat]
+            | failed mat = [[[]]]
+            | otherwise = (concat [ search' (many prune e) | e <- expand1 mat ] \\ [[]] ) \\ [[""]]
+
+{-map extract $ filter solved $ e
+    where
+        e = many (\m -> concat (map expand1 m)) firstChoices
+        firstChoices = expand1 $ many prune (choices mat)
+-}
 
 
 -- Example from Bird
