@@ -2,7 +2,11 @@
 -- Functional Programming Tutorial 9
 --
 -- Week 10(19-23 Nov.)
-module Tutorial9 where
+module Tutorial9 ( MakeMatrix (),
+                   put, puts
+                   search
+                 )
+where
 
 -- Sudoku solver
 -- Based on Bird, "Thinking Functionally with Haskell"
@@ -10,6 +14,8 @@ module Tutorial9 where
 import Test.QuickCheck
 import Data.List (sort,nub,(\\),transpose,genericLength)
 import Data.String (lines,unlines)
+
+type MakeMatrix a = Matrix a
 
 type Row a     =  [a]
 type Col a     =  [a]
@@ -181,12 +187,6 @@ search mat = nub $ search' (many prune (choices mat))
             | solved mat = [extract mat]
             | failed mat = [[[]]]
             | otherwise = (concat [ search' (many prune e) | e <- expand1 mat ] \\ [[]] ) \\ [[""]]
-
-{-map extract $ filter solved $ e
-    where
-        e = many (\m -> concat (map expand1 m)) firstChoices
-        firstChoices = expand1 $ many prune (choices mat)
--}
 
 
 -- Example from Bird
