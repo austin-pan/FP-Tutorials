@@ -3,7 +3,7 @@
 --
 -- Week 10(19-23 Nov.)
 module Tutorial9 ( MakeMatrix (),
-                   put, puts
+                   put, puts,
                    search
                  )
 where
@@ -72,7 +72,7 @@ prop_expand :: Matrix [Digit] -> Bool
 prop_expand m = length (expand m) == product (map (\x -> product (map length x)) m)
 
 numPosAns :: Matrix Digit -> Int
-numPosAns m = length (expand (choices m)) -- wrong
+numPosAns m = length (expand (choices m)) -- wrong, doesn't use fromIntegral
 -- 11, 12, 13.
 -- transpose :: [[a]] -> [[a]]
 -- transpose [xs]      =  [[x] | x <- xs]
